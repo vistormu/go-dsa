@@ -48,3 +48,7 @@ func (s *StackArray[T]) IsEmpty() bool {
 func (s *StackArray[T]) Length() int {
 	return len(s.elements)
 }
+
+func (s *StackArray[T]) ToSlice() []T {
+	return s.elements
+}

@@ -73,3 +73,13 @@ func (s *StackLinkedList[T]) Clear() {
 	s.head = nil
 	s.length = 0
 }
+
+func (s *StackLinkedList[T]) ToSlice() []T {
+	slice := make([]T, 0, s.length)
+	current := s.head
+	for current != nil {
+		slice = append(slice, current.data)
+		current = current.next
+	}
+	return slice
+}

@@ -65,6 +65,14 @@ func (s *UniqueStack[T]) Pop() (T, error) {
 	return n.data, nil
 }
 
+func (s *UniqueStack[T]) ToSlice() []T {
+	slice := make([]T, 0, s.length)
+	for n := s.head; n != nil; n = n.next {
+		slice = append(slice, n.data)
+	}
+	return slice
+}
+
 func (s *UniqueStack[T]) unlink(n *doublyNode[T]) {
 	if n.prev != nil {
 		n.prev.next = n.next
@@ -78,4 +86,3 @@ func (s *UniqueStack[T]) unlink(n *doublyNode[T]) {
 	}
 	s.length--
 }
-
