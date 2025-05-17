@@ -34,24 +34,3 @@ func (kf *KalmanFilter[T]) Compute(measurement T) T {
 
 	return T(kf.xHat)
 }
-
-type MultiKalmanFilter[T constraints.Number] struct {
-	filters []*KalmanFilter[T]
-}
-
-func NewMultiKalmanFilter[T constraints.Number](processVariance, measurementVariance, initialErrorCovariance float64, initialEstimates []T) *MultiKalmanFilter[T] {
-	numSignals := len(initialEstimates)
-	filters := make([]*KalmanFilter[T], numSignals)
-	for i := range numSignals {
-		filters[i] = NewKalmanFilter(processVariance, measurementVariance, initialErrorCovariance, initialEstimates[i])
-	}
-	return &MultiKalmanFilter[T]{filters: filters}
-}
-
-func (mkf *MultiKalmanFilter[T]) Compute(measurements []T) []T {
-	results := make([]T, len(measurements))
-	for i, measurement := range measurements {
-		results[i] = mkf.filters[i].Compute(measurement)
-	}
-	return results
-}
