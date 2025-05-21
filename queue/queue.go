@@ -3,9 +3,10 @@ package queue
 type Queue[T any] interface {
 	Enqueue(data T)
 	Dequeue() (T, error)
+	Peek() (T, bool)
+	ToSlice() []T
 	IsEmpty() bool
 	Length() int
-	Peek() (T, bool)
 	Clear()
 }
 

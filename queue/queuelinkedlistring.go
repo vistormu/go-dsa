@@ -75,6 +75,21 @@ func (q *QueueLinkedListArray[T]) Peek() (T, error) {
 	return q.head.data, nil
 }
 
+func (q *QueueLinkedListArray[T]) ToSlice() []T {
+	slice := make([]T, q.length)
+	if q.head == nil {
+		return slice
+	}
+
+	current := q.head
+	for i := range q.length {
+		slice[i] = current.data
+		current = current.next
+	}
+
+	return slice
+}
+
 func (q *QueueLinkedListArray[T]) IsEmpty() bool {
 	return q.length == 0
 }

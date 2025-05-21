@@ -60,6 +60,14 @@ func (q *QueueArrayRing[T]) Peek() (T, error) {
 	return q.data[q.head], nil
 }
 
+func (q *QueueArrayRing[T]) ToSlice() []T {
+	slice := make([]T, q.size)
+	for i := range q.size {
+		slice[i] = q.data[(q.head+i)%q.capacity]
+	}
+	return slice
+}
+
 func (q *QueueArrayRing[T]) IsEmpty() bool {
 	return q.size == 0
 }

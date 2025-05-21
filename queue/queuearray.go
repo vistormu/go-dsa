@@ -40,6 +40,13 @@ func (q *QueueArray[T]) Dequeue() (T, error) {
 	return data, nil
 }
 
+func (q *QueueArray[T]) ToSlice() []T {
+	slice := make([]T, q.length)
+	copy(slice, q.data)
+
+	return slice
+}
+
 func (q *QueueArray[T]) IsEmpty() bool {
 	return q.length == 0
 }
