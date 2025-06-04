@@ -6,16 +6,21 @@ import (
 )
 
 type Triangular[T constraints.Number] struct {
-	amp    T
-	freq   T
-	phi    T
-	offset T
+	amp    float64
+	freq   float64
+	phi    float64
+	offset float64
 }
 
 func NewTriangularReference[T constraints.Number](amp, freq, phi, offset T) Triangular[T] {
-	return Triangular[T]{amp, freq, phi, offset}
+	return Triangular[T]{
+		amp:    float64(amp),
+		freq:   float64(freq),
+		phi:    float64(phi),
+		offset: float64(offset),
+	}
 }
 
 func (tr Triangular[T]) Compute(t T) T {
-	return T(float64(tr.amp)*(1+math.Asin(math.Sin(2*math.Pi*float64(tr.freq*t+tr.phi)))*2/math.Pi) + float64(tr.offset))
+	return T(tr.amp*(1+2*math.Asin(math.Sin(2*math.Pi*tr.freq*float64(t)+tr.phi))/math.Pi) + tr.offset)
 }

@@ -6,16 +6,21 @@ import (
 )
 
 type Sine[T constraints.Number] struct {
-	amp    T
-	freq   T
-	phi    T
-	offset T
+	amp    float64
+	freq   float64
+	phi    float64
+	offset float64
 }
 
 func NewSineReference[T constraints.Number](amp, freq, phi, offset T) Sine[T] {
-	return Sine[T]{amp, freq, phi, offset}
+	return Sine[T]{
+		amp:    float64(amp),
+		freq:   float64(freq),
+		phi:    float64(phi),
+		offset: float64(offset),
+	}
 }
 
 func (s Sine[T]) Compute(t T) T {
-	return T(float64(s.amp)*math.Sin(2*math.Pi*float64(s.freq*t+s.phi)) + float64(s.offset))
+	return T(s.amp*math.Sin(2*math.Pi*s.freq*float64(t)+s.phi) + s.offset)
 }
