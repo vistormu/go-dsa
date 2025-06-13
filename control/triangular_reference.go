@@ -22,5 +22,5 @@ func NewTriangularReference[T constraints.Number](amp, freq, phi, offset T) Tria
 }
 
 func (tr Triangular[T]) Compute(t T) T {
-	return T(tr.amp*(1+2*math.Asin(math.Sin(2*math.Pi*tr.freq*float64(t)+tr.phi))/math.Pi) + tr.offset)
+	return T(tr.amp*(2/math.Pi*math.Asin(math.Sin(2*math.Pi*tr.freq*float64(t)+tr.phi))) + tr.offset)
 }
