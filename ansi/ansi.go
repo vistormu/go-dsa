@@ -1,5 +1,11 @@
 package ansi
 
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
 const (
 	// Cursor movement
 	Home  = "\x1b[H"
@@ -64,3 +70,45 @@ const (
 	BgCyan2    = "\x1b[106m"
 	BgWhite2   = "\x1b[107m"
 )
+
+func Hex(code string) string {
+	// Remove leading "#" if present
+	if strings.HasPrefix(code, "#") {
+		code = code[1:]
+	}
+	if len(code) != 6 {
+		// Fallback: return reset code for invalid hex
+		return Reset
+	}
+	r, err1 := strconv.ParseUint(code[0:2], 16, 8)
+	g, err2 := strconv.ParseUint(code[2:4], 16, 8)
+	b, err3 := strconv.ParseUint(code[4:6], 16, 8)
+	if err1 != nil || err2 != nil || err3 != nil {
+		return Reset
+	}
+	return Rgb(int(r), int(g), int(b))
+}
+
+func Rgb(r, g, b int) string {
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", r, g, b)
+}
+
+func BgHex(code string) string {
+	if strings.HasPrefix(code, "#") {
+		code = code[1:]
+	}
+	if len(code) != 6 {
+		return Reset
+	}
+	r, err1 := strconv.ParseUint(code[0:2], 16, 8)
+	g, err2 := strconv.ParseUint(code[2:4], 16, 8)
+	b, err3 := strconv.ParseUint(code[4:6], 16, 8)
+	if err1 != nil || err2 != nil || err3 != nil {
+		return Reset
+	}
+	return BgRgb(int(r), int(g), int(b))
+}
+
+func BgRgb(r, g, b int) string {
+	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", r, g, b)
+}
