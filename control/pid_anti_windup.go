@@ -14,8 +14,8 @@ type PidAntiWindup[T constraints.Float] struct {
 	integralBounds [2]T
 }
 
-func NewPidAntiWindup[T constraints.Float](kp, ki, kd, dt, alpha T, integralBounds [2]T) *PidAntiWindup[T] {
-	return &PidAntiWindup[T]{kp, ki, kd, dt, alpha, 0, 0, integralBounds}
+func NewPidAntiWindup[T constraints.Float](kp, ki, kd, alpha T, integralBounds [2]T) *PidAntiWindup[T] {
+	return &PidAntiWindup[T]{kp, ki, kd, alpha, 0, 0, 0, integralBounds}
 }
 
 func (p *PidAntiWindup[T]) Compute(value T, dt T) T {
