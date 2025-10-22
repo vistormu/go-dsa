@@ -7,7 +7,6 @@ import (
 
 type PidAntiWindup[T constraints.Float] struct {
 	kp, ki, kd     T
-	dt             T
 	alpha          T
 	prevValue      T
 	integral       T
@@ -16,14 +15,14 @@ type PidAntiWindup[T constraints.Float] struct {
 }
 
 func NewPidAntiWindup[T constraints.Float](kp, ki, kd, dt, alpha T, integralBounds [2]T) *PidAntiWindup[T] {
-	return &PidAntiWindup[T]{kp, ki, kd, dt, alpha, 0, 0, 0, integralBounds}
+	return &PidAntiWindup[T]{kp, ki, kd, dt, alpha, 0, 0, integralBounds}
 }
 
-func (p *PidAntiWindup[T]) Compute(value T) T {
-	p.integral += value * p.dt
+func (p *PidAntiWindup[T]) Compute(value T, dt T) T {
+	p.integral += value * dt
 	p.integral = math.Clip(p.integral, p.integralBounds[0], p.integralBounds[1])
 
-	unfiltDerivative := (value - p.prevValue) / p.dt
+	unfiltDerivative := (value - p.prevValue) / dt
 	p.derivative = p.alpha*unfiltDerivative + (1-p.alpha)*p.derivative
 
 	output := p.kp*value + p.ki*p.integral + p.kd*p.derivative

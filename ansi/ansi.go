@@ -72,20 +72,19 @@ const (
 )
 
 func Hex(code string) string {
-	// Remove leading "#" if present
-	if strings.HasPrefix(code, "#") {
-		code = code[1:]
-	}
+	code = strings.TrimPrefix(code, "#")
+
 	if len(code) != 6 {
-		// Fallback: return reset code for invalid hex
 		return Reset
 	}
+
 	r, err1 := strconv.ParseUint(code[0:2], 16, 8)
 	g, err2 := strconv.ParseUint(code[2:4], 16, 8)
 	b, err3 := strconv.ParseUint(code[4:6], 16, 8)
 	if err1 != nil || err2 != nil || err3 != nil {
 		return Reset
 	}
+
 	return Rgb(int(r), int(g), int(b))
 }
 
@@ -94,18 +93,20 @@ func Rgb(r, g, b int) string {
 }
 
 func BgHex(code string) string {
-	if strings.HasPrefix(code, "#") {
-		code = code[1:]
-	}
+	code = strings.TrimPrefix(code, "#")
+
 	if len(code) != 6 {
 		return Reset
 	}
+
 	r, err1 := strconv.ParseUint(code[0:2], 16, 8)
 	g, err2 := strconv.ParseUint(code[2:4], 16, 8)
 	b, err3 := strconv.ParseUint(code[4:6], 16, 8)
+
 	if err1 != nil || err2 != nil || err3 != nil {
 		return Reset
 	}
+
 	return BgRgb(int(r), int(g), int(b))
 }
 
