@@ -1,12 +1,13 @@
 package math
 
-import (
-	"github.com/vistormu/go-dsa/constraints"
-)
+import c "github.com/vistormu/go-dsa/constraints"
 
-func Abs[T constraints.Number](value T) T {
-	if value < 0 {
-		return -value
+// return the absolute value
+//
+// time: O(1)
+func Abs[T c.Number](v T) T {
+	if v < 0 {
+		return -v
 	}
-	return value
+	return v
 }

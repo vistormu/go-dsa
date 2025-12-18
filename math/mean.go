@@ -1,16 +1,15 @@
 package math
 
-import (
-	"github.com/vistormu/go-dsa/constraints"
-)
+import c "github.com/vistormu/go-dsa/constraints"
 
-func Mean[T constraints.Number](values []T) T {
-	var sum T
-	length := len(values)
-
-	for _, v := range values {
-		sum += v
+// return the arithmetic mean of values
+//
+// return 0 if values is empty
+//
+// time: O(n)
+func Mean[T c.Number](values []T) T {
+	if len(values) == 0 {
+		return 0
 	}
-
-	return sum / T(length)
+	return Sum(values) / T(len(values))
 }

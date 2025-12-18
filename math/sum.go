@@ -1,14 +1,14 @@
 package math
 
-import (
-	"github.com/vistormu/go-dsa/constraints"
-)
+import c "github.com/vistormu/go-dsa/constraints"
 
-func Sum[T constraints.Number](values []T) T {
-	result := T(0)
-	for _, value := range values {
-		result += value
+// return the sum of values
+//
+// time: O(n)
+func Sum[T c.Number](values []T) T {
+	var sum T
+	for _, v := range values {
+		sum += v
 	}
-
-	return result
+	return sum
 }

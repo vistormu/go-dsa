@@ -6,81 +6,67 @@ import (
 	"sync"
 )
 
-// `TypeMap` is a concurrent map keyed by type (reflect.Type)
+// store values keyed by base reflect type
 //
-// values are always stored as pointers to the data to allow in-place mutation
+// store values as pointers to their base type to allow in place mutation
 //
-// there can only exist one value per type
+// allow at most one value per base type
 type TypeMap struct {
 	mu   sync.RWMutex
 	data map[reflect.Type]any
 }
 
-// `NewTypeMap` creates and returns an empty, concurrency-safe `TypeMap`
+// create an empty typemap
 func NewTypeMap() *TypeMap {
 	return &TypeMap{
 		data: make(map[reflect.Type]any),
 	}
 }
 
-// `Len` returns the current number of entries in the map
-//
-// safe for concurrent use
+// return the number of entries
 func (tm *TypeMap) Len() int {
 	tm.mu.RLock()
 	n := len(tm.data)
 	tm.mu.RUnlock()
-
 	return n
 }
 
-// `Keys` returns a snapshot of all base-type keys currently stored
-//
-// the returned slice is a copy and is safe to use without additional locking
+// report whether no entries are stored
+func (tm *TypeMap) Empty() bool {
+	return tm.Len() == 0
+}
+
+// return a snapshot of all base type keys
 func (tm *TypeMap) Keys() []reflect.Type {
 	tm.mu.RLock()
-
 	keys := make([]reflect.Type, 0, len(tm.data))
-
 	for k := range tm.data {
 		keys = append(keys, k)
 	}
 	tm.mu.RUnlock()
-
 	return keys
 }
 
-// `Values` returns a snapshot of all stored values (each is a pointer to its base type)
+// return a snapshot of all stored values
 //
-// the returned slice is a copy and is safe to use without additional locking
+// each value is the stored pointer to its base type
 func (tm *TypeMap) Values() []any {
 	tm.mu.RLock()
-
 	values := make([]any, 0, len(tm.data))
-
 	for _, v := range tm.data {
 		values = append(values, v)
 	}
 	tm.mu.RUnlock()
-
 	return values
 }
 
-// `Iter` returns an iterator over a snapshot of the current contents
+// iterate over a snapshot of the current contents
 //
-// it does NOT hold locks while yielding (to avoid deadlocks / long critical sections)
+// do not hold locks while yielding
 //
-// each yielded value is the stored pointer `*BaseType`
-//
-// it does not guarantee the same order on each call
-//
-// example:
-//
-//	for k, v := range tm.Iter() {
-//	    // k is reflect.Type (base type), v is pointer to k
-//	}
+// each yielded value is the stored pointer to its base type
 func (tm *TypeMap) Iter() iter.Seq2[reflect.Type, any] {
-	return func(yield func(rt reflect.Type, v any) bool) {
+	return func(yield func(reflect.Type, any) bool) {
 		type pair struct {
 			k reflect.Type
 			v any
@@ -101,18 +87,19 @@ func (tm *TypeMap) Iter() iter.Seq2[reflect.Type, any] {
 	}
 }
 
-// `Clear` removes all entries from the map
-//
-// safe for concurrent use
+// remove all entries while preserving capacity
 func (tm *TypeMap) Clear() {
 	tm.mu.Lock()
-	tm.data = make(map[reflect.Type]any)
+	for k := range tm.data {
+		delete(tm.data, k)
+	}
 	tm.mu.Unlock()
 }
 
 // =======
 // helpers
 // =======
+
 func baseType(t reflect.Type) reflect.Type {
 	if t == nil {
 		return nil
@@ -138,77 +125,72 @@ func asPointerToValue(v any) any {
 // generic functions
 // =================
 
-// `Add[T]` stores `v` under the base type of `T`
+// add stores v under the base type of T
 //
-// if a type of `*T` is passed, it will  be stored internally as `reflect.TypeFor[T]`,
+// require T to be a non pointer type
 //
-// the value is stored as a reference inside the map to allow in-place mutation
-//
-// safe for concurrent use
-func Add[T any](tm *TypeMap, v T) {
+// store the value as *T
+func Add[T any](tm *TypeMap, v T) bool {
 	rt := reflect.TypeFor[T]()
-	key := baseType(rt)
-	ptr := asPointerToValue(v)
+	if rt.Kind() == reflect.Pointer {
+		return false
+	}
 
 	tm.mu.Lock()
-	tm.data[key] = ptr
+	tm.data[rt] = asPointerToValue(v)
 	tm.mu.Unlock()
+	return true
 }
 
-// `Get[T]` retrieves the pointer to the stored value for `T` (the base type)
+// get retrieves the stored pointer for the base type T
 //
-// it returns `nil, false` if there is no data under the specified type or if the type cast to `*T` fails
+// require T to be a non pointer type
 //
-// safe for concurrent use
+// return false if the entry does not exist or the cast fails
 func Get[T any](tm *TypeMap) (*T, bool) {
 	rt := reflect.TypeFor[T]()
-	key := baseType(rt)
+	if rt.Kind() == reflect.Pointer {
+		return nil, false
+	}
 
 	tm.mu.RLock()
-	v, ok := tm.data[key]
+	v, ok := tm.data[rt]
 	tm.mu.RUnlock()
-
 	if !ok {
 		return nil, false
 	}
 
 	out, ok := v.(*T)
-
 	return out, ok
 }
 
-// `Remove[T]` removes the entry for the base type `T`
+// remove deletes the entry for the base type T
 //
-// it returns `false` if there is no value under the type `T`
-//
-// safe for concurrent use
+// require T to be a non pointer type
 func Remove[T any](tm *TypeMap) bool {
 	rt := reflect.TypeFor[T]()
-	key := baseType(rt)
-
-	tm.mu.Lock()
-	defer tm.mu.Unlock()
-
-	if _, ok := tm.data[key]; !ok {
+	if rt.Kind() == reflect.Pointer {
 		return false
 	}
 
-	delete(tm.data, key)
-
-	return true
+	tm.mu.Lock()
+	_, ok := tm.data[rt]
+	if ok {
+		delete(tm.data, rt)
+	}
+	tm.mu.Unlock()
+	return ok
 }
 
 // ====================
 // reflection functions
 // ====================
 
-// `AddByType` stores `v` under the provided type `t`, where the key is the base type of `t`
+// addbytype stores v under the base type of t
 //
-// returns `false` is the types are incompatible
-//
-// safe for concurrent use
+// accept v as either base value or pointer to base value
 func AddByType(tm *TypeMap, v any, t reflect.Type) bool {
-	if t == nil || v == nil {
+	if tm == nil || v == nil || t == nil {
 		return false
 	}
 
@@ -216,14 +198,16 @@ func AddByType(tm *TypeMap, v any, t reflect.Type) bool {
 	if key == nil {
 		return false
 	}
-	ptrType := reflect.PointerTo(key)
 
 	rv := reflect.ValueOf(v)
 	rt := rv.Type()
 
+	ptrType := reflect.PointerTo(key)
+
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 
+	// pointer input
 	if rt == ptrType || rt.AssignableTo(ptrType) {
 		if rt != ptrType && rv.CanConvert(ptrType) {
 			rv = rv.Convert(ptrType)
@@ -232,6 +216,7 @@ func AddByType(tm *TypeMap, v any, t reflect.Type) bool {
 		return true
 	}
 
+	// value input
 	if rt == key || rt.AssignableTo(key) || rv.CanConvert(key) {
 		if rt != key {
 			if !rv.CanConvert(key) {
@@ -248,13 +233,9 @@ func AddByType(tm *TypeMap, v any, t reflect.Type) bool {
 	return false
 }
 
-// `GetByType` retrieves the stored pointer for the provided type t's base type
-//
-// it returns (nil, false) if t is nil or no value exists
-//
-// safe for concurrent use
+// getbytype retrieves the stored pointer for the base type of t
 func GetByType(tm *TypeMap, t reflect.Type) (any, bool) {
-	if t == nil {
+	if tm == nil || t == nil {
 		return nil, false
 	}
 
@@ -267,13 +248,9 @@ func GetByType(tm *TypeMap, t reflect.Type) (any, bool) {
 	return raw, ok
 }
 
-// `DeleteByType` removes the entry keyed by base type of t
-//
-// returns false if t is nil or no such entry exists
-//
-// safe for concurrent use
+// deletebytype removes the entry keyed by the base type of t
 func DeleteByType(tm *TypeMap, t reflect.Type) bool {
-	if t == nil {
+	if tm == nil || t == nil {
 		return false
 	}
 
@@ -281,14 +258,10 @@ func DeleteByType(tm *TypeMap, t reflect.Type) bool {
 
 	tm.mu.Lock()
 	_, ok := tm.data[key]
-	if !ok {
-		tm.mu.Unlock()
-		return false
+	if ok {
+		delete(tm.data, key)
 	}
-
-	delete(tm.data, key)
-
 	tm.mu.Unlock()
 
-	return true
+	return ok
 }

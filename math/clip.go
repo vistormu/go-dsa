@@ -1,15 +1,16 @@
 package math
 
-import (
-	"github.com/vistormu/go-dsa/constraints"
-)
+import c "github.com/vistormu/go-dsa/constraints"
 
-func Clip[T constraints.Number](value, min, max T) T {
-	if value < min {
-		return min
+// clamp value to the inclusive range [lo, hi]
+//
+// if lo is greater than hi, it swaps them
+//
+// time: O(1)
+func Clip[T c.Number](value, lo, hi T) T {
+	if lo > hi {
+		lo, hi = hi, lo
 	}
-	if value > max {
-		return max
-	}
-	return value
+
+	return min(hi, max(lo, value))
 }
