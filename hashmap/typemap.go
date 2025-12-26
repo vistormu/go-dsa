@@ -182,6 +182,22 @@ func Remove[T any](tm *TypeMap) bool {
 	return ok
 }
 
+// checks the existance of T in the TypeMap
+//
+// require T to be a non pointer type
+func Has[T any](tm *TypeMap) bool {
+	rt := reflect.TypeFor[T]()
+	if rt.Kind() == reflect.Pointer {
+		return false
+	}
+
+	tm.mu.RLock()
+	_, ok := tm.data[rt]
+	tm.mu.RUnlock()
+
+	return ok
+}
+
 // ====================
 // reflection functions
 // ====================
