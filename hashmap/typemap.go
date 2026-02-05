@@ -110,17 +110,6 @@ func baseType(t reflect.Type) reflect.Type {
 	return t
 }
 
-func asPointerToValue(v any) any {
-	rv := reflect.ValueOf(v)
-	rt := rv.Type()
-	if rt.Kind() == reflect.Pointer {
-		return v
-	}
-	ptr := reflect.New(rt)
-	ptr.Elem().Set(rv)
-	return ptr.Interface()
-}
-
 // =================
 // generic functions
 // =================
@@ -136,9 +125,13 @@ func Add[T any](tm *TypeMap, v T) bool {
 		return false
 	}
 
+	p := new(T)
+	*p = v
+
 	tm.mu.Lock()
-	tm.data[rt] = asPointerToValue(v)
+	tm.data[rt] = p
 	tm.mu.Unlock()
+
 	return true
 }
 
