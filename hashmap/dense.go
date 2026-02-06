@@ -1,5 +1,7 @@
 package hashmap
 
+import "iter"
+
 // store values in a dense slice while providing O(1) lookup by key.
 //
 // this type is not safe for concurrent use.
@@ -12,8 +14,8 @@ type DenseMap[K comparable, V any] struct {
 // create an empty densemap.
 //
 // time: O(1)
-func NewDenseMap[K comparable, V any]() DenseMap[K, V] {
-	return DenseMap[K, V]{
+func NewDenseMap[K comparable, V any]() *DenseMap[K, V] {
+	return &DenseMap[K, V]{
 		dense:    make([]K, 0),
 		values:   make([]V, 0),
 		location: make(map[K]int),
@@ -30,6 +32,10 @@ func (m *DenseMap[K, V]) Add(k K, v V) {
 	if ok {
 		m.values[row] = v
 		return
+	}
+
+	if m.location == nil {
+		m.location = make(map[K]int)
 	}
 
 	m.location[k] = len(m.dense)
@@ -114,4 +120,96 @@ func (m *DenseMap[K, V]) Len() int {
 // time: O(1)
 func (m *DenseMap[K, V]) Empty() bool {
 	return len(m.dense) == 0
+}
+
+// remove all entries but keep allocated storage.
+//
+// time: O(n)
+func (m *DenseMap[K, V]) Clear() {
+	if len(m.dense) == 0 {
+		return
+	}
+
+	// clear location
+	for k := range m.location {
+		delete(m.location, k)
+	}
+
+	// clear slices
+	var zk K
+	var zv V
+	for i := range m.dense {
+		m.dense[i] = zk
+		m.values[i] = zv
+	}
+
+	m.dense = m.dense[:0]
+	m.values = m.values[:0]
+}
+
+// ========
+// iterators
+// ========
+
+// iterate over stored key value pairs in dense order.
+//
+// iteration stops if yield returns false.
+//
+// time: O(n)
+func (m *DenseMap[K, V]) Iter() iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for i := range m.dense {
+			if !yield(m.dense[i], m.values[i]) {
+				return
+			}
+		}
+	}
+}
+
+// iterate over stored keys in dense order.
+//
+// iteration stops if yield returns false.
+//
+// time: O(n)
+func (m *DenseMap[K, V]) IterKeys() iter.Seq[K] {
+	return func(yield func(K) bool) {
+		for _, k := range m.dense {
+			if !yield(k) {
+				return
+			}
+		}
+	}
+}
+
+// iterate over stored values in dense order.
+//
+// iteration stops if yield returns false.
+//
+// time: O(n)
+func (m *DenseMap[K, V]) IterValues() iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for _, v := range m.values {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
+
+// return a snapshot of the stored keys in dense order.
+//
+// time: O(n)
+func (m *DenseMap[K, V]) Keys() []K {
+	out := make([]K, len(m.dense))
+	copy(out, m.dense)
+	return out
+}
+
+// return a snapshot of the stored values in dense order.
+//
+// time: O(n)
+func (m *DenseMap[K, V]) Values() []V {
+	out := make([]V, len(m.values))
+	copy(out, m.values)
+	return out
 }
